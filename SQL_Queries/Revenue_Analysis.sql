@@ -54,4 +54,47 @@ select
  on s.productkey=p.productkey 
  group by year(s.orderdate),quarter(s.orderdate) 
  order by year,quarter asc;
-
+/*============================================================================================================================================
+                             MONTH-OVER-MONTH REVENUE GROWTH
+===============================================================================================================================================*/
+with mom as(select 
+year(s.orderdate) as `year`,
+month(s.orderdate) as `month`,
+monthname(s.orderdate) as `monthname`,
+round(sum(s.orderquantity*p.productprice),2) as month_revenue 
+from sales s 
+join products p 
+on s.productkey=p.productkey 
+group by year(s.orderdate),month(s.orderdate),monthname(s.orderdate) 
+order by `year` asc,`month` asc)
+select 
+`year`,
+`month`,
+`monthname`,
+month_revenue,
+((month_revenue-lag(month_revenue,1,0) over( order by `year`,`month` asc))/lag(month_revenue) over(order by `year`,`month`asc))*100.0 
+as difference 
+from mom 
+order by `year`,`month` asc;
+/*==========================================================================================================================================
+                  YEAR OVER YEAR GROWTH BY MONTH
+===========================================================================================================================================*/
+with mom as(select 
+year(s.orderdate) as `year`,
+month(s.orderdate) as `month`,
+monthname(s.orderdate) as `monthname`,
+round(sum(s.orderquantity*p.productprice),2) as month_revenue 
+from sales s 
+join products p 
+on s.productkey=p.productkey 
+group by year(s.orderdate),month(s.orderdate),monthname(s.orderdate) 
+order by `year` asc,`month` asc)
+select 
+`month`,
+`monthname`,
+max(case when `year`=2015 then month_revenue end) as 2015_revenue,
+max(case when `year`=2016 then month_revenue end) as 2016_revenue ,
+max(case when `year`=2017 then month_revenue end) as 2017_revenue
+ from mom 
+ group by `month`, `monthname` 
+ order by `month`,`monthname` asc;
